@@ -140,3 +140,35 @@ for i in range(0,200):
     estimation_trajectory.append(ekf.run_ekf)
     
 
+
+# In[ ]:
+
+
+#Common functions
+def find_F_t(F_t,theta_t, v_t):
+    F_t[1][0] = -1 * v_t * math.sin(theta_t) * dt
+    F_t[2][0] =  v_t * math.cos(theta_t) * dt
+    F_t[0][0],F_t[1][1],F_t[2][2] = 1,1,1
+    return F_t
+
+def find_W_t(W_t,theta_t):
+    W_t[1][1] = math.cos(theta_t) * dt
+    W_t[2][1] = math.sin(theta_t) * dt
+    W_t[0][0]= dt
+    return W_t
+
+def find_H_t(H_t,observation,estimated_state,landmark_values):
+    #unpack values
+    x_t = estimated_state[1][0]
+    y_t = estimated_state[2][0]
+    x_l = landmark_values[0][0]
+    y_l = landmark_values[1][0]
+    d = observation[0][0]
+    H_t[0][0] = (x_t - x_l)/d
+    H_t[0][1] = (y_t - y_l)/d
+    H_t[1][0]= -1 * ((y_t - y_l)/(d*d))
+    H_t[1][1]= (x_t - x_l)/(d*d)
+    H_t[1][2] = -1
+    return H_t
+    
+
