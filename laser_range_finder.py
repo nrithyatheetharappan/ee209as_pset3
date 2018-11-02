@@ -34,13 +34,13 @@ class DistanceGenerator:
         X[2] = np.array([self.x_line_vertical, self.slope*self.x_line_vertical - self.y_int])
         # horizontal line
         X[3] = np.array([(self.y_line_horizontal-self.y_int)/self.slope, self.y_line_horizontal])
-        X_final = X - self.location
+        X_relative = X - self.location
         i = 0
         while np.linalg.norm(self.direction_check) < 4:
-            self.direction_check[i] = self.direction_calc(X_final[i])
+            self.direction_check[i] = self.direction_calc(X_relative[i])
             i += 1
         direction_index = [k for k, e in enumerate(self.direction_check) if e != 0]
-        test_points = [X_final[direction_index[0]], X_final[direction_index[1]]]
+        test_points = [X[direction_index[0]], X[direction_index[1]]]
         return test_points
 
     def laser_output(self, point):
