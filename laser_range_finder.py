@@ -31,7 +31,7 @@ class DistanceGenerator:
         # x-int
         X[1] = np.array([-self.y_int/self.slope, 0.0])
         # vertical line
-        X[2] = np.array([self.x_line_vertical, self.slope*self.x_line_vertical - self.y_int])
+        X[2] = np.array([self.x_line_vertical, self.slope*self.x_line_vertical + self.y_int])
         # horizontal line
         X[3] = np.array([(self.y_line_horizontal-self.y_int)/self.slope, self.y_line_horizontal])
         X_relative = X - self.location
