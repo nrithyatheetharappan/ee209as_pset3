@@ -36,7 +36,7 @@ class DistanceGenerator:
         X[3] = np.array([(self.y_line_horizontal-self.y_int)/self.slope, self.y_line_horizontal])
         X_relative = X - self.location
         i = 0
-        while np.linalg.norm(self.direction_check) < 4:
+        while np.linalg.norm(self.direction_check) <= 2:
             self.direction_check[i] = self.direction_calc(X_relative[i])
             i += 1
         direction_index = [k for k, e in enumerate(self.direction_check) if e != 0]
