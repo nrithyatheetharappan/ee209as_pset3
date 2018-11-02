@@ -48,22 +48,22 @@ class EKF(object):
         self.phi = phi
         self.phi_1 = phi_1
         self.phi_2 = phi_2
-        self.X_cap = np.zeros((6,1))
+        self.X_hat = np.zeros((6,1))
         self.omega_t = ((r*phi_1) - (r*phi_2))/L
         self.v_t = ((r*phi_1) + (r*phi_2))/2
         self.X_bar = np.array((6,1))
         self.F_t = np.zeros((6,6))
         self.W_t = np.zeros((6,2))
-        self.sigma_cap = np.zeros((3,3))#check
+        self.sigma_hat = np.zeros((3,3))#check
         self.H_t = np.zeros((4,6))
         self.bias = 0
         
     def time_propogation_update(self):
     # measurement_values and estimated values are numpy arrays
     #the ones with the bar, previous estimated values or prev finalized values?
-        theta_t = self.X_cap[3][0]
-        x_t = self.X_cap[0][0]
-        y_t = self.X_cap[1][0]
+        theta_t = self.X_hat[3][0]
+        x_t = self.X_hat[0][0]
+        y_t = self.X_hat[1][0]
         theta_t_plus_one = theta_t + self.omega_t * self.dt
         x_t_plus_one = x_t + self.v_t* math.cos(omega_t) * self.dt
         y_t_plus_one = y_t + self.v_t * math.cos(omega_t) * self.dt
@@ -79,7 +79,7 @@ class EKF(object):
 #         linearized_matrix = np.dot(F_t,estimated_state) + np.dot(W_t,noise_matrix)
 #         return linearized_matrix
     def covariance_update(self):
-        sigma_t_plus_one_temp = np.dot(self.F_t,self.sigma_cap)
+        sigma_t_plus_one_temp = np.dot(self.F_t,self.sigma_hat)
         sigma_t_plus_one_temp = np.dot(sigma_t_plus_one_temp,self.F_t.transpose())
         #Q
         sigma_t_plus_one_temp1 = np.dot(self.W_t,self.Q)
@@ -107,13 +107,13 @@ class EKF(object):
     #def error
     def observation_update(self):
         temp_product = np.dot(self.kalman_gain,error)
-        self.X_cap = self.X_bar + temp_product
+        self.X_hat = self.X_bar + temp_product
         #return updated_state
     def covariance_observation_update(self):
         #take Ht out?
         inner_product = np.dot(self.kalman_gain,self.H_t)
         inner_product = np.dot(inner_product,self.sigma_bar)
-        self.sigma_cap = self.sigma_bar - inner_product
+        self.sigma_hat = self.sigma_bar - inner_product
         #return updated_covariance
     def run_EKF(self):
         self.time_propogation_update()
@@ -125,7 +125,7 @@ class EKF(object):
         self.get_error()
         self.covariance_update()
         self.observation_linearization()
-        return self.X_cap,self.sigma_cap
+        return self.X_hat,self.sigma_hat
 
     
 #all below values?

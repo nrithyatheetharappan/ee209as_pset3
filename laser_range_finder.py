@@ -1,7 +1,6 @@
 
 import numpy as np
 
-
 class DistanceGenerator:
     def __init__(self, x, y, theta):
         self.location = np.array([x, y])
@@ -47,7 +46,7 @@ class DistanceGenerator:
     def laser_output(self):
         for m, n in enumerate(self.test_points):
             self.distance[m] = self.distance_calc(n)
-            self.min_distance = np.min(self.distance)
+        self.min_distance = np.min(self.distance)
         return self.min_distance
 
 
@@ -79,7 +78,7 @@ if __name__ == '__main__':
     print distance.slope
     points = distance.valid_points()
     print points
-    d  = distance.laser_output()
+    d = distance.laser_output()
     print d
 
 

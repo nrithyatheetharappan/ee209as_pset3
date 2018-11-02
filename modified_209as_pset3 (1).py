@@ -1,11 +1,8 @@
 
-# coding: utf-8
-
-# In[11]:
-
+from laser_range_finder import DistanceGenerator
 
 class World:
-    def __init__(self,Length,Width,radius,L):
+    def __init__(self, Length, Width, radius, L):
         self.Length = Length
         self.Width = Width
         self.radius = radius
@@ -79,13 +76,13 @@ class EKF(car_simulation):
         #self.phi = phi
         self.phi_1 = phi_1
         self.phi_2 = phi_2
-        self.X_cap = np.zeros((6,1))
+        self.X_hat = np.zeros((6,1))
         self.omega_t = ((r*phi_1) - (r*phi_2))/L
         self.v_t = ((r*phi_1) + (r*phi_2))/2
         self.X_bar = np.zeros((6,1))
         self.F_t = np.zeros((6,6))
         self.W_t = np.zeros((6,2))
-        self.sigma_cap = np.zeros((6,6))#check
+        self.sigma_hat = np.zeros((6,6))#check
         self.H_t = np.zeros((4,6))
         self.bias = 0
         self.observation_model = np.zeros((4,1))
@@ -95,9 +92,9 @@ class EKF(car_simulation):
     def time_propogation_update(self):
     # measurement_values and estimated values are numpy arrays
     #the ones with the bar, previous estimated values or prev finalized values?
-        theta_t = self.X_cap[3][0]
-        x_t = self.X_cap[0][0]
-        y_t = self.X_cap[1][0]
+        theta_t = self.X_hat[3][0]
+        x_t = self.X_hat[0][0]
+        y_t = self.X_hat[1][0]
         theta_t_plus_one = theta_t + self.omega_t * self.dt
         x_t_plus_one = x_t + self.v_t* math.cos(self.omega_t) * self.dt
         y_t_plus_one = y_t + self.v_t * math.cos(self.omega_t) * self.dt
@@ -123,7 +120,7 @@ class EKF(car_simulation):
 #         linearized_matrix = np.dot(F_t,estimated_state) + np.dot(W_t,noise_matrix)
 #         return linearized_matrix
     def covariance_update(self):
-        sigma_t_plus_one_temp = np.dot(self.F_t,self.sigma_cap)
+        sigma_t_plus_one_temp = np.dot(self.F_t,self.sigma_hat)
         sigma_t_plus_one_temp = np.dot(sigma_t_plus_one_temp,self.F_t.transpose())
         #Q
         sigma_t_plus_one_temp1 = np.dot(self.W_t,self.Q)
@@ -187,15 +184,15 @@ class EKF(car_simulation):
         
     def observation_update(self):
         temp_product = np.dot(self.kalman_gain,self.error)
-        self.X_cap = self.X_bar + temp_product
-        print(self.X_cap)
+        self.X_hat = self.X_bar + temp_product
+        print(self.X_hat)
         #return updated_state
     def covariance_observation_update(self):
         #take Ht out?
         inner_product = np.dot(self.kalman_gain,self.H_t)
         inner_product = np.dot(inner_product,self.sigma_bar)
-        self.sigma_cap = self.sigma_bar - inner_product
-        #print(self.sigma_cap)
+        self.sigma_hat = self.sigma_bar - inner_product
+        #print(self.sigma_hat)
         #return updated_covariance
     def run_EKF(self):
         
@@ -209,8 +206,8 @@ class EKF(car_simulation):
         self.observation_update()
         #get LANDMARKS
         self.covariance_observation_update()
-        #print(self.X_cap)
-        temp1,temp2 = self.X_cap,self.sigma_cap
+        #print(self.X_hat)
+        temp1,temp2 = self.X_hat,self.sigma_hat
         #print(temp1,temp2)
         return temp1,temp2
 
@@ -349,102 +346,61 @@ def find_H_t(H_t,observation,estimated_state,landmark_values):
 #all below values?
 
 # this can go in main
-import numpy as np
-import math
-#intializations
-c1,c2,c3,c4 = 1,1,1,1
+if __name__ == '__main__':
+    import numpy as np
+    import math
+    import matplotlib.pyplot as plt
+    #intializations
+
+    c1,c2,c3,c4 = 1,1,1,1
+
+    phi_1 = 0.75
+    phi_2 = 0.5
+    dt = 0.2
+    L = 85
+    Q = np.zeros((2,2))
+    Q[0][0] = c1 * np.random.normal(0,0.66) * np.random.normal(0,0.66)
+    Q[1][1] = c1 * np.random.normal(0,0.66) * np.random.normal(0,0.66)
+    R = np.zeros((4,4))
+    R[0][0] = c1 * np.random.normal(0, .04)
+    R[1][1] = c2 * np.random.normal(0, .04)
+    R[2][2] = c3 * np.random.normal(0, .01)
+    R[3][3] = c4 * np.random.normal(0, .01)
+    r = 20
 
 
-phi_1 = 0.75
-phi_2 = 0.5
-dt = 0.2
-L = 85
-Q = np.zeros((2,2))
-Q[0][0] = c1 * np.random.normal(0,0.66) * np.random.normal(0,0.66)
-Q[1][1] = c1 * np.random.normal(0,0.66) * np.random.normal(0,0.66)
-R = np.zeros((4,4))
-R[0][0] = c1 * np.random.normal(0, .04)
-R[1][1] = c2 * np.random.normal(0, .04)
-R[2][2] = c3 * np.random.normal(0, .01)
-R[3][3] = c4 * np.random.normal(0, .01)
-r = 20
+    ekf = EKF(phi_1,phi_2,dt,L,Q,R,r)
+    car = car_simulation(r,phi_1,phi_2, L)
+    car_trajectory = []
+    estimation_trajectory = []
+    covariance = []
 
 
-ekf = EKF(phi_1,phi_2,dt,L,Q,R,r)
-car = car_simulation(r,phi_1,phi_2, L)
-car_trajectory = []
-estimation_trajectory = []
-covariance = []
-for i in range(0,200):
-    #car_trajectory.append(call car simulation)
-    #call sensor simulation
-    X_val = car.get_simulation()
-    car_trajectory.append((X_val[0][0],X_val[1][0]))
-    #print(car.get_simulation())
-    #check for time step to compute estimate?
-    #print("first loop",i)
-    
-    if i % 2 == 0:
-        #print("inside loop")
-        U,Sigma = ekf.run_EKF()
-        #print(U)
-        #print(Sigma)
-        estimation_trajectory.append((U[0][0],U[1][0]))
-        covariance.append(Sigma)
-    #print(estimation_trajectory)
-print("car")
-print(car_trajectory)
-print("kalman")
-print(estimation_trajectory)
-print("covariance")
-print(covariance)
+    for i in range(0,10):
+        #car_trajectory.append(call car simulation)
+        #call sensor simulation
+        X_val = car.get_simulation()
+        car_trajectory.append((X_val[0][0],X_val[1][0]))
+        #print(car.get_simulation())
+        #check for time step to compute estimate?
+        #print("first loop",i)
 
+        if i % 2 == 0:
+            #print("inside loop")
+            U,Sigma = ekf.run_EKF()
+            #print(U)
+            #print(Sigma)
+            estimation_trajectory.append((U[0][0],U[1][0]))
+            covariance.append(Sigma)
+        #print(estimation_trajectory)
+    # print("car")
+    # print(car_trajectory)
+    # print("kalman")
+    # print(estimation_trajectory)
+    # print("covariance")
+    # print(covariance)
 
-# In[25]:
-
-
-import numpy as np
-class A(object):
-    def __init__(self,a):
-        self.a = a
-        self.b = np.zeros((2,2))
-    def aa(self):
-        self.b[0][0] = self.a
-        print(self.a)
-class B(A):
-    def aab(self):
-        print("hi")
-        #b = B(1)
-        #print(B.a)
-class C(B):
-    def cc(self):
-        b = A.__init__(1)
-        b.aa()
-        
-b = C(1)
-b.cc()
-
-
-# In[60]:
-
-
-print(2  0.2)
-
-
-# In[71]:
-
-
-listl = []
-for i in range(0,100):
-    listl.append(i)
-print(listl)
-
-
-# In[18]:
-
-
-import matplotlib.pyplot as plt
-plt.plot(car_trajectory,label = 'bot', color = 'b')
-plt.plot(estimation_trajectory,label = 'kalman', color = 'g')
-plt.show()
+    plt.plot(car_trajectory,label = 'bot', color = 'b')
+    plt.plot(estimation_trajectory,label = 'kalman', color = 'g')
+    plt.show()
 
