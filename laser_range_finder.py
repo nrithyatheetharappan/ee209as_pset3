@@ -55,8 +55,8 @@ class SensorSimulation(DistanceGenerator):
     def __init__(self, x, y, theta, omega):
         D1 = DistanceGenerator.__init__(self, x, y, theta)
         D2 = DistanceGenerator.__init__(self, x, y, theta + np.pi)
-        self.distance_one = D1 + np.random.normal(0, .04)
-        self.distance_two = D2 + np.random.normal(0, .04)
+        self.distance_one = D1.laser_output() + np.random.normal(0, .04)
+        self.distance_two = D2.laser_output() + np.random.normal(0, .04)
         self.theta = theta + np.random.normal(0, .001)
         self.omega = omega + np.random.normal(0, .001)
         self.sensor_simulation = np.array([self.distance_one, self.distance_two, self.theta, self.omega])
@@ -66,8 +66,8 @@ class ObservationModel(DistanceGenerator):
     def __init__(self, x_bar, y_bar, theta_bar, omega_bar):
         D1_bar = DistanceGenerator.__init__(self, x_bar, y_bar, theta_bar)
         D2_bar = DistanceGenerator.__init__(self, x_bar, y_bar, theta_bar + np.pi)
-        self.distance_one_bar = D1_bar + np.random.normal(0, .04)
-        self.distance_two_bar = D2_bar + np.random.normal(0, .04)
+        self.distance_one_bar = D1_bar.laser_output() + np.random.normal(0, .04)
+        self.distance_two_bar = D2_bar.laser_output() + np.random.normal(0, .04)
         self.theta_bar = theta_bar + np.random.normal(0, .001)
         self.omega_bar = omega_bar + np.random.normal(0, .001)
         self.observation_model = np.array([self.distance_one_bar, self.distance_two_bar, self.theta_bar, self.omega_bar])
