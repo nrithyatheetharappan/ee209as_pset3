@@ -90,7 +90,7 @@ def find_H_t(H_t,observation,z_bar,landmark_values):
 
 
 class EKF(car_simulation):
-    c1 = 5
+    c1 = 5 # trust the measurement over the model
     c2 = 5
     c3 = 1
     c4 = 1
