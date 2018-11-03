@@ -30,8 +30,8 @@ class car_simulation(DistanceGenerator):
         theta_t_state = 0
         bias_state = 0
         while i < self.loops:
-            w_omega_t = np.random.normal(0, 0.066)
-            w_v_t = np.random.normal(0, 0.066)
+            w_omega_t = np.random.normal(0, 0.66)
+            w_v_t = np.random.normal(0, 0.66)
             omega_t_state = ((self.r*self.phi_1) - (self.r*self.phi_2))/self.L + w_omega_t
             v_t_state = ((self.r*self.phi_1) + (self.r*self.phi_2))/2 + w_v_t
             x_t_state = x_t_state + v_t_state*math.cos(theta_t_state)*self.dt
@@ -48,7 +48,7 @@ class car_simulation(DistanceGenerator):
         i = 0
         while i < self.loops:
             d1 = DistanceGenerator(self.z[i][0], self.z[i][1], self.z[i][3])
-            d2 = DistanceGenerator(self.z[i][0], self.z[i][1], self.z[i][3] + np.pi)
+            d2 = DistanceGenerator(self.z[i][0], self.z[i][1], self.z[i][3] - np.pi)
             distance_one = d1.laser_output() + np.random.normal(0, .04)
             distance_two = d2.laser_output() + np.random.normal(0, .04)
             theta_t_measured = self.z[i][3] + np.random.normal(0, .001)
@@ -90,8 +90,8 @@ def find_H_t(H_t,observation,z_bar,landmark_values):
 
 
 class EKF(car_simulation):
-    c1 = 1
-    c2 = 1
+    c1 = 5
+    c2 = 5
     c3 = 1
     c4 = 1
     c5 = 1
@@ -109,7 +109,7 @@ class EKF(car_simulation):
         self.sigma_bar = np.zeros((6, 6))
         self.H_t = np.zeros((4, 6))
         self.observation_model = np.zeros(4)
-        self.Q = np.diag(np.array([self.c1*np.random.normal(0, 0.066), self.c2*np.random.normal(0, 0.066)]))
+        self.Q = np.diag(np.array([self.c1*np.random.normal(0, 0.66), self.c2*np.random.normal(0, 0.66)]))
         self.R = np.diag(np.array([self.c3*np.random.normal(0, 0.04), self.c4*np.random.normal(0, 0.04),
                                    self.c5*np.random.normal(0, .01), self.c6*np.random.normal(0, .01)]))
         self.error = 0
@@ -256,8 +256,8 @@ class DistanceGenerator:
         return self.landmark_point
 
 if __name__ == '__main__':
-    k = 1
-    input1 = .1
+    k = 0
+    input1 = 1
     input2 = .1
     sim_time = 2
     wheel_radius = 20
@@ -279,11 +279,11 @@ if __name__ == '__main__':
         k_gain = estimator.kalman_gain_value()
         error = estimator.error_calculation(car_sensor_readout[k])
         z_hat = np.array([estimator.conditional_mean()])
-        print z_hat
-        np.append(z_hat_list, z_hat, axis=0)
+        z_hat_list = np.concatenate((z_hat_list, z_hat), axis = 0)
         sigma_hat = estimator.observation_update_covariance()
         k = k + 1
-print z_hat_list
+    z_hat_final = z_hat_list[1:]
+print car_sensor_readout
 print car_state
-
+print z_hat_final
 
