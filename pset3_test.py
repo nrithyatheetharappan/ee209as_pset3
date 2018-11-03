@@ -10,64 +10,65 @@ class World:
         self.radius = radius
         self.L = L
 
-        
+
 class car_simulation(DistanceGenerator):
-    def __init__(self, r, phi_1, phi_2, L, dt):
-        self.theta_t_measured = 0
-        self.x_t_measured = 0
-        self.y_t_measured = 0
-        self.omega_t_measured = 0
-        self.v_t_measured = 0
+    def __init__(self, r, phi_1, phi_2, L, dt, total_time):
+        self.loops = np.round(total_time/dt, 0)
         self.r = r
         self.phi_1 = phi_1
         self.phi_2 = phi_2
         self.L = L
-        self.sensor_output = np.zeros(4)
-        self.bias = 0
+        self.sensor_output = np.zeros((int(self.loops), 4))
         self.dt = dt
+        self.z = np.zeros((int(self.loops), 6))
 
-    def get_simulation(self,i):
-        w_omega_t = np.random.normal(0, 0.066)
-        w_v_t = np.random.normal(0, 0.066)
-        self.omega_t_measured = ((self.r*self.phi_1) - (self.r*self.phi_2))/self.L + w_omega_t
-        self.v_t_measured = ((self.r*self.phi_1) + (self.r*self.phi_2))/2 + w_v_t
-        self.x_t__measured = self.x_t_measured + self.v_t_measured * math.cos(self.theta_t_measured) * self.dt
-        self.y_t_measured = self.y_t_measured + self.v_t_measured * math.sin(self.theta_t_measured) * self.dt
-        self.theta_t_measured = self.theta_t_measured + self.omega_t_measured * self.dt
-        self.bias = self.bias
-        z = np.zeros((1,6))
-        z[i][0] = self.x_t_measured
-        z[i][1] = self.y_t_measured
-        z[i][2] = self.v_t_measured
-        z[i][3] = self.theta_t_measured
-        z[i][4] = self.omega_t_measured
-        z[i][5] = self.bias
+    def get_simulation(self):
+        # precompute the car simulation
+        i = 0
+        x_t_state = 0
+        y_t_state = 0
+        theta_t_state = 0
+        bias_state = 0
+        while i < self.loops:
+            w_omega_t = np.random.normal(0, 0.066)
+            w_v_t = np.random.normal(0, 0.066)
+            omega_t_state = ((self.r*self.phi_1) - (self.r*self.phi_2))/self.L + w_omega_t
+            v_t_state = ((self.r*self.phi_1) + (self.r*self.phi_2))/2 + w_v_t
+            x_t_state = x_t_state + v_t_state*math.cos(theta_t_state)*self.dt
+            y_t_state = y_t_state + v_t_state*math.sin(theta_t_state)*self.dt
+            theta_t_state = theta_t_state + omega_t_state*self.dt
+            bias_state = bias_state
+            self.z[i][:] = np.array([x_t_state, y_t_state, v_t_state,
+                                     theta_t_state, omega_t_state, bias_state])
+            i = i + 1
+        return self.z
 
     def get_sensor_simulation(self):
-        d1 = DistanceGenerator(self.x_t_measured, self.y_t_measured, self.theta_t_measured)
-        d2 = DistanceGenerator(self.x_t_measured, self.y_t_measured, self.theta_t_measured + np.pi)
-        distance_one = d1.laser_output() + np.random.normal(0, .04)
-        distance_two = d2.laser_output() + np.random.normal(0, .04)
-        theta_t_measured = self.theta_t_measured + np.random.normal(0, .001)
-        omega_t_measured = self.omega_t_measured + np.random.normal(0, .001)
-        self.sensor_output[0] = distance_one
-        self.sensor_output[1] = distance_two
-        self.sensor_output[2] = theta_t_measured
-        self.sensor_output[3] = omega_t_measured
+        # precompute the sensor output
+        i = 0
+        while i < self.loops:
+            d1 = DistanceGenerator(self.z[i][0], self.z[i][1], self.z[i][3])
+            d2 = DistanceGenerator(self.z[i][0], self.z[i][1], self.z[i][3] + np.pi)
+            distance_one = d1.laser_output() + np.random.normal(0, .04)
+            distance_two = d2.laser_output() + np.random.normal(0, .04)
+            theta_t_measured = self.z[i][3] + np.random.normal(0, .001)
+            omega_t_measured = self.z[i][4] + np.random.normal(0, .001)
+            self.sensor_output[i][:] = np.array([distance_one, distance_two, theta_t_measured, omega_t_measured])
+            i = i + 1
         return self.sensor_output
 
 def find_F_t(F_t,theta_t_hat, v_t_hat, dt):
     F_t[0][3] = -1 * v_t_hat * np.sin(theta_t_hat) * dt
-    F_t[1][3] =  v_t_hat * math.cos(theta_t_hat) * dt
-    F_t[0][0],F_t[1][1],F_t[3][3],F_t[5][5] = 1,1,1,1
+    F_t[1][3] = v_t_hat * math.cos(theta_t_hat) * dt
+    F_t[0][0], F_t[1][1], F_t[3][3], F_t[5][5] = 1, 1, 1, 1
     return F_t
 
 
 def find_W_t(W_t,theta_t_hat, dt):
     W_t[0][0] = math.cos(theta_t_hat) * dt
     W_t[1][0] = math.sin(theta_t_hat) * dt
-    W_t[3][1]= dt
-    W_t[2][0],W_t[4][1] = 1,1
+    W_t[3][1] = dt
+    W_t[2][0], W_t[4][1] = 1, 1
     return W_t
 
 
@@ -82,24 +83,24 @@ def find_H_t(H_t,observation,z_bar,landmark_values):
     d2_bar = observation[1]
     H_t[0][0] = (x_bar - x_l1_bar)/d1_bar
     H_t[0][1] = (y_bar - y_l1_bar)/d1_bar
-    H_t[1][1]= (y_bar - y_l2_bar)/d2_bar
-    H_t[1][0]= (x_bar - x_l2_bar)/d2_bar
-    H_t[2][3],H_t[3][4] = 1,1
+    H_t[1][1] = (y_bar - y_l2_bar)/d2_bar
+    H_t[1][0] = (x_bar - x_l2_bar)/d2_bar
+    H_t[2][3], H_t[3][4] = 1, 1
     return H_t
 
 
 class EKF(car_simulation):
-    def __init__(self, phi_1, phi_2, dt, L, Q, R, r):
-        car_simulation.__init__(self, r, phi_1, phi_2, L, dt)
-        self.z_hat = np.zeros((1,6))
+    def __init__(self, phi_1, phi_2, dt, L, Q, R, r, total_time):
+        car_simulation.__init__(self, r, phi_1, phi_2, L, dt, total_time)
+        self.z_hat = np.zeros((self.loops, 6))
         self.z_hat[0][2] = ((r * phi_1) + (r * phi_2)) / 2
         self.z_hat[0][4] = ((r*phi_1) - (r*phi_2))/L
         self.z_bar = np.zeros(6)
-        self.F_t = np.zeros((6,6))
-        self.W_t = np.zeros((6,2))
-        self.sigma_hat = np.zeros((6,6))
-        self.sigma_bar = np.zeros((6,6))
-        self.H_t = np.zeros((4,6))
+        self.F_t = np.zeros((6, 6))
+        self.W_t = np.zeros((6, 2))
+        self.sigma_hat = np.zeros((6, 6))
+        self.sigma_bar = np.zeros((6, 6))
+        self.H_t = np.zeros((4, 6))
         self.observation_model = np.zeros(4)
         self.Q = Q
         self.R = R
@@ -111,7 +112,7 @@ class EKF(car_simulation):
         v_t_hat = self.z_hat[2]
         theta_t_hat = self.z_hat[3]
         omega_t_hat = self.z_hat[4]
-        bias        = self.z_hat[5]
+        bias = self.z_hat[5]
 
         x_t_plus_one_bar = x_t_hat + v_t_hat* math.cos(omega_t_hat) * self.dt
         y_t_plus_one_bar = y_t_hat + v_t_hat * math.cos(omega_t_hat) * self.dt
@@ -232,10 +233,20 @@ class DistanceGenerator:
         for m, n in enumerate(self.test_points):
             self.distance[m] = self.distance_calc(n)
         self.min_distance = np.min(self.distance)
+        return self.min_distance
 
     def get_landmarks(self):
         landmark = np.argmin(self.distance)
         self.landmark_point = self.test_points[np.asscalar(landmark)]
+        return self.landmark_point
+
+if __name__ == '__main__':
+    input1 = 1
+    input2 = 1
+    track = World(750, 500, 20, 85)
+    car = car_simulation(20, input1, input2, 85, .2, 1)
+    car_state = car.get_simulation()
+    car_sensor_readout = car.get_sensor_simulation()
 
 
 
