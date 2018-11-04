@@ -116,7 +116,7 @@ class car_simulation(DistanceGenerator):
         x_t_state = self.x_i
         y_t_state = self.y_i
         theta_t_state = self.theta_i
-        bias_state = 1
+        bias_state = 0.05
         while i < self.loops:
             w_omega_t = np.random.normal(0, 0)
             w_v_t = np.random.normal(0, 0)
@@ -177,12 +177,12 @@ def find_H_t(H_t,observation,z_bar,landmark_values): # good
 
 
 class EKF(car_simulation):
-    c1 = 1e-5 # trust the measurement over the model
-    c2 = 1e-5
-    c3 = 1e-5
-    c4 = 1e-5
-    c5 = 1e-5
-    c6 = 1e-5
+    c1 = .1 # trust the measurement over the model
+    c2 = .1
+    c3 = 1
+    c4 = 1
+    c5 = 1
+    c6 = 1
 
     def __init__(self, phi_1, phi_2, dt, L, r, total_time, x, y, theta):
         super(EKF, self).__init__(r, phi_1, phi_2, L, dt, total_time, x, y, theta)
@@ -191,7 +191,7 @@ class EKF(car_simulation):
         self.z_hat[1] = y
         self.z_hat[2] = theta
         self.z_hat[3] = 0
-        self.z_hat[4] = 1
+        self.z_hat[4] = .05
         self.z_bar = np.zeros(5)
         self.landmark_0 = 0
         self.landmark_1 = 0
@@ -213,9 +213,9 @@ class EKF(car_simulation):
         theta_t_hat = self.z_hat[2]
         omega_t_hat = self.z_hat[3]
         bias = self.z_hat[4]
-
+        #print self.z_hat
         x_t_plus_one_bar = x_t_hat + self.v_t*math.cos(theta_t_hat + np.pi/2)*self.dt
-        y_t_plus_one_bar = y_t_hat + self.v_t*math.cos(theta_t_hat + np.pi/2)*self.dt
+        y_t_plus_one_bar = y_t_hat + self.v_t*math.sin(theta_t_hat + np.pi/2)*self.dt
         theta_t_plus_one_bar = (theta_t_hat + 2 * np.pi) % (2 * np.pi) + bias + omega_t_hat*self.dt
         omega_t_plus_one_bar = omega_t_hat
         bias_plus_one_bar = bias
@@ -225,6 +225,7 @@ class EKF(car_simulation):
         self.z_bar[2] = theta_t_plus_one_bar
         self.z_bar[3] = omega_t_plus_one_bar
         self.z_bar[4] = bias_plus_one_bar
+        #print self.z_bar
         return self.z_bar
 
     def time_linearization(self):
@@ -250,11 +251,11 @@ class EKF(car_simulation):
         theta_bar = self.z_bar[2]
         omega_bar = self.z_bar[3]
         bias_bar = self.z_bar[4]
-        distance_one_bar = self.laser_output(x_bar, y_bar, 0)
+        distance_one_bar = self.laser_output(x_bar, y_bar, theta_bar)
         #print 'distance one'
         #print distance_one_bar
         self.landmark_0 = self.get_landmarks()
-        distance_two_bar = self.laser_output(x_bar, y_bar, 0  + np.pi / 2)
+        distance_two_bar = self.laser_output(x_bar, y_bar, theta_bar + np.pi / 2)
         #print distance_two_bar
         self.landmark_1 = self.get_landmarks()
         self.observation_model[0] = distance_two_bar + np.random.normal(0, 0)
@@ -282,23 +283,34 @@ class EKF(car_simulation):
         outer_temp = np.dot(self.sigma_bar, self.H_t.transpose())
         #print outer_temp
         self.kalman_gain = np.dot(outer_temp, inner_temp4)
-        print self.kalman_gain
+        #print self.kalman_gain
+        #self.kalman_gain = np.zeros((5,4))
+        #self.kalman_gain[0][0], self.kalman_gain[1][1], self.kalman_gain[2][2], self.kalman_gain[3][3] = 1,1,1,1
+        #print self.kalman_gain
         return self.kalman_gain
 
     def error_calculation(self, sensor_read):
+        this = self.get_observation_model()
         self.error = sensor_read - self.observation_model
+        #print sensor_read[2]
+        #print self.observation_model[2]
+        self.error[2] = self.error[2]%(2*np.pi)
+        if self.error[2] > np.pi:
+            self.error[2] -= 2*np.pi
         #print self.error
         #self.error[2] = 0
+        #print self.kalman_gain*self.error
         return self.error
         
     def conditional_mean(self): # good last resort change the model to something linear
         temp_product = np.dot(self.kalman_gain, self.error)
         self.z_hat = self.z_bar + temp_product
+        #print self.this
         #print self.z_bar
         #print self.kalman_gain
         #print self.z_hat
         #self.z_hat[2:4] = 0
-        #print self.z_hat
+        print self.z_hat
         return self.z_hat
 
     def observation_update_covariance(self): # good
@@ -310,8 +322,8 @@ class EKF(car_simulation):
 #ddd
 if __name__ == '__main__':
     k = 0
-    input1 = 1
-    input2 = 1
+    input1 = -1
+    input2 = .5
     sim_time = 1 # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
@@ -333,8 +345,8 @@ if __name__ == '__main__':
         F_t, W_t = estimator.time_linearization()
         sigma_bar = estimator.covariance_update()
         h_z = estimator.get_observation_model()
+        H_t = estimator.observation_linearization()
         #print h_z
-        #H_t = estimator.observation_linearization()
         k_gain = estimator.kalman_gain_value()
         error = estimator.error_calculation(car_sensor_readout[k])
         z_hat = np.array([estimator.conditional_mean()])
@@ -344,6 +356,6 @@ if __name__ == '__main__':
     #print car_sensor_readout
     #print car_state
     z_hat_final = z_hat_list[1:]
-    #print car_state
-    print z_hat_final
+    print car_state
+    #print z_hat_final
 
