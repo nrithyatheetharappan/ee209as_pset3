@@ -311,7 +311,7 @@ class ObservationModel(DistanceGenerator):
 def find_F_t(F_t,theta_t, v_t, dt):
     F_t[0][3] = -1 * v_t * math.sin(theta_t) * dt
     F_t[1][3] =  v_t * math.cos(theta_t) * dt
-    F_t[0][0],F_t[1][1],F_t[3][3],F_t[5][5] = 1,1,1,1
+    F_t[0][0],F_t[1][1],F_t[3][3],F_t[4][4], F_t[5][5] = 1,1,1,1,1
     return F_t
 
 def find_W_t(W_t,theta_t, dt):
