@@ -1,7 +1,7 @@
 
 import numpy as np
 
-class DistanceGenerator:
+class DistanceGenerator(object):
     def __init__(self, x, y, theta):
         self.location = np.array([x, y])
         self.x_line_vertical = 500.0
@@ -44,7 +44,8 @@ class DistanceGenerator:
         return self.test_points
 
     def laser_output(self):
-        for m, n in enumerate(self.test_points):
+        test_points = self.valid_points()
+        for m, n in enumerate(test_points):
             self.distance[m] = self.distance_calc(n)
         self.min_distance = np.min(self.distance)
         return self.min_distance
@@ -52,10 +53,11 @@ class DistanceGenerator:
 
 class SensorSimulation(DistanceGenerator):
     def __init__(self, x, y, theta, omega):
-        D1 = DistanceGenerator.__init__(self, x, y, theta)
-        D2 = DistanceGenerator.__init__(self, x, y, theta + np.pi)
-        self.distance_one = D1.laser_output() + np.random.normal(0, .04)
-        self.distance_two = D2.laser_output() + np.random.normal(0, .04)
+        #DistanceGenerator.__init__(self, x, y, theta)
+        super(SensorSimulation, self).__init__(x, y, theta)
+        self.distance_one = self.laser_output() + np.random.normal(0, .04)
+        super(SensorSimulation, self).__init__(x, y, theta+np.pi/2)
+        self.distance_two = self.laser_output() + np.random.normal(0, .04)
         self.theta = theta + np.random.normal(0, .001)
         self.omega = omega + np.random.normal(0, .001)
         self.sensor_simulation = np.array([self.distance_one, self.distance_two, self.theta, self.omega])
@@ -74,13 +76,13 @@ class ObservationModel(DistanceGenerator):
 
 if __name__ == '__main__':
     # plot the trajectories
-    distance = DistanceGenerator(300, 400, -np.pi/6)
-    print distance.slope
-    points = distance.valid_points()
-    print points
+    distance = DistanceGenerator(300, 400, -np.pi/6 + np.pi + np.pi/2)
+    #points = distance.valid_points()
+    # print points
     d = distance.laser_output()
     print d
-
+    this = SensorSimulation(300, 400, -np.pi/6 + np.pi + np.pi/2, 1)
+    print this.sensor_simulation
 
 
 
