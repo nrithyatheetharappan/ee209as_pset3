@@ -118,8 +118,8 @@ class car_simulation(DistanceGenerator):
         theta_t_state = self.theta_i
         bias_state = 0.05
         while i < self.loops:
-            w_omega_t = np.random.normal(0, 0)
-            w_v_t = np.random.normal(0, 0)
+            w_omega_t = np.random.normal(0, 0.0288)
+            w_v_t = np.random.normal(0, .0288)
             omega_t_state = ((self.r*self.phi_1) - (self.r*self.phi_2))/self.L + w_omega_t
             x_t_state = x_t_state + (self.v_t + w_v_t)*math.cos(theta_t_state + np.pi/2)*self.dt
             y_t_state = y_t_state + (self.v_t + w_v_t)*math.sin(theta_t_state + np.pi/2)*self.dt
@@ -134,11 +134,11 @@ class car_simulation(DistanceGenerator):
         # precompute the sensor output
         i = 0
         while i < self.loops:
-            distance_one = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][2]) + np.random.normal(0, 0)
+            distance_one = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][2]) + np.random.normal(0, 0.04)
             distance_two = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][2] + np.pi/2)\
-                           + np.random.normal(0, 0)
-            theta_t_measured = self.z[i][2] + np.random.normal(0, 0) + self.z[i][4]
-            omega_t_measured = self.z[i][3] + np.random.normal(0, 0)
+                           + np.random.normal(0, 0.04)
+            theta_t_measured = self.z[i][2] + np.random.normal(0, .001) + self.z[i][4]
+            omega_t_measured = self.z[i][3] + np.random.normal(0, .001)
             self.sensor_output[i][:] = np.array([distance_two, distance_one,
                                                  theta_t_measured, omega_t_measured])
             i = i + 1
@@ -178,11 +178,11 @@ def find_H_t(H_t,observation,z_bar,landmark_values): # good
 
 class EKF(car_simulation):
     c1 = .1 # trust the measurement over the model
-    c2 = .1
+    c2 = .01
     c3 = 1
     c4 = 1
-    c5 = 1
-    c6 = 1
+    c5 = 10
+    c6 = 10
 
     def __init__(self, phi_1, phi_2, dt, L, r, total_time, x, y, theta):
         super(EKF, self).__init__(r, phi_1, phi_2, L, dt, total_time, x, y, theta)
@@ -191,7 +191,7 @@ class EKF(car_simulation):
         self.z_hat[1] = y
         self.z_hat[2] = theta
         self.z_hat[3] = 0
-        self.z_hat[4] = .05
+        self.z_hat[4] = 0.05 # without the bias state it tracks perfectly
         self.z_bar = np.zeros(5)
         self.landmark_0 = 0
         self.landmark_1 = 0
@@ -201,9 +201,12 @@ class EKF(car_simulation):
         self.sigma_bar = np.zeros((5, 5))
         self.H_t = np.zeros((4, 5))
         self.observation_model = np.zeros(4)
-        self.Q = np.diag(np.array([self.c1, self.c2]))
-        self.R = np.diag(np.array([self.c3, self.c4,
-                                   self.c5, self.c6]))
+        # self.Q = np.diag(np.array([self.c1, self.c2]))
+        # self.R = np.diag(np.array([self.c3, self.c4,
+        #                            self.c5, self.c6]))
+        self.Q = np.diag(np.array([self.c1 * np.random.normal(0, 0.0288), self.c2 * np.random.normal(0, 0.0288)]))
+        self.R = np.diag(np.array([self.c3 * np.random.normal(0, 0.04), self.c4 * np.random.normal(0, 0.04),
+                                   self.c5 * np.random.normal(0, .001), self.c6 * np.random.normal(0, .001)]))
         self.kalman_gain = np.zeros((5, 4))
         self.error = 0
         
@@ -216,7 +219,7 @@ class EKF(car_simulation):
         #print self.z_hat
         x_t_plus_one_bar = x_t_hat + self.v_t*math.cos(theta_t_hat + np.pi/2)*self.dt
         y_t_plus_one_bar = y_t_hat + self.v_t*math.sin(theta_t_hat + np.pi/2)*self.dt
-        theta_t_plus_one_bar = (theta_t_hat + 2 * np.pi) % (2 * np.pi) + bias + omega_t_hat*self.dt
+        theta_t_plus_one_bar = (theta_t_hat + 2 * np.pi) % (2 * np.pi) + omega_t_hat*self.dt
         omega_t_plus_one_bar = omega_t_hat
         bias_plus_one_bar = bias
 
@@ -258,10 +261,10 @@ class EKF(car_simulation):
         distance_two_bar = self.laser_output(x_bar, y_bar, theta_bar + np.pi / 2)
         #print distance_two_bar
         self.landmark_1 = self.get_landmarks()
-        self.observation_model[0] = distance_two_bar + np.random.normal(0, 0)
-        self.observation_model[1] = distance_one_bar + np.random.normal(0, 0)
-        self.observation_model[2] = theta_bar + bias_bar + np.random.normal(0, 0)
-        self.observation_model[3] = omega_bar + np.random.normal(0, 0)
+        self.observation_model[0] = distance_two_bar + np.random.normal(0, 0.04)
+        self.observation_model[1] = distance_one_bar + np.random.normal(0, 0.04)
+        self.observation_model[2] = theta_bar + bias_bar + np.random.normal(0, 0.001)
+        self.observation_model[3] = omega_bar + np.random.normal(0, 0.001)
         return self.observation_model
 
     def observation_linearization(self): # good
@@ -322,14 +325,14 @@ class EKF(car_simulation):
 #ddd
 if __name__ == '__main__':
     k = 0
-    input1 = -1
-    input2 = .5
-    sim_time = 1 # the car travels at 20 mm per second
+    input1 = -.6
+    input2 = .3
+    sim_time = 4 # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
     height = 750
     wheel_base = 85
-    time_step = .1
+    time_step = .01
     x_i = 300
     y_i = 300
     theta_i = 0

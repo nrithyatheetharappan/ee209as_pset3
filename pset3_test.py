@@ -115,10 +115,10 @@ class car_simulation(DistanceGenerator):
         x_t_state = self.x_i
         y_t_state = self.y_i
         theta_t_state = self.theta_i
-        bias_state = 0
+        bias_state = .05
         while i < self.loops:
-            w_omega_t = np.random.normal(0, 0.066)
-            w_v_t = np.random.normal(0, 0.066)
+            w_omega_t = np.random.normal(0, 0.0288)
+            w_v_t = np.random.normal(0, 0.0288)
             omega_t_state = ((self.r*self.phi_1) - (self.r*self.phi_2))/self.L + w_omega_t
             v_t_state = ((self.r*self.phi_1) + (self.r*self.phi_2))/2 + w_v_t
             x_t_state = x_t_state + v_t_state*math.cos(theta_t_state + np.pi/2)*self.dt
@@ -137,7 +137,7 @@ class car_simulation(DistanceGenerator):
             distance_one = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][3]) + np.random.normal(0, .04)
             distance_two = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][3] + np.pi/2)\
                            + np.random.normal(0, .04)
-            theta_t_measured = self.z[i][3] + np.random.normal(0, .001)
+            theta_t_measured = self.z[i][3] + np.random.normal(0, .001) + self.z[i][5]
             omega_t_measured = self.z[i][4] + np.random.normal(0, .001)
             self.sensor_output[i][:] = np.array([distance_one, distance_two, theta_t_measured, omega_t_measured])
             i = i + 1
@@ -146,7 +146,7 @@ class car_simulation(DistanceGenerator):
 def find_F_t(F_t,theta_t_hat, v_t_hat, dt): # good
     F_t[0][3] = -1 * v_t_hat * np.sin(theta_t_hat + np.pi/2) * dt
     F_t[1][3] = v_t_hat * np.cos(theta_t_hat + np.pi/2) * dt
-    F_t[0][0], F_t[1][1], F_t[3][3], F_t[4][4], F_t[5][5] = 1, 1, 1, 1, 1
+    F_t[0][0], F_t[1][1], F_t[2][2], F_t[3][3], F_t[4][4], F_t[5][5] = 1, 1, 1, 1, 1, 1
     return F_t
 
 
@@ -176,12 +176,12 @@ def find_H_t(H_t,observation,z_bar,landmark_values): # good
 
 
 class EKF(car_simulation):
-    c1 = 1 # trust the measurement over the model
-    c2 = 1
+    c1 = .1 # trust the measurement over the model
+    c2 = .01
     c3 = 1
     c4 = 1
-    c5 = 1
-    c6 = 1
+    c5 = 10
+    c6 = 10
 
     def __init__(self, phi_1, phi_2, dt, L, r, total_time, x, y, theta):
         super(EKF, self).__init__(r, phi_1, phi_2, L, dt, total_time, x, y, theta)
@@ -191,6 +191,7 @@ class EKF(car_simulation):
         self.z_hat[2] = ((r * phi_1) + (r * phi_2)) / 2
         self.z_hat[3] = theta
         self.z_hat[4] = ((r*phi_1) - (r*phi_2))/L
+        self.z_hat[5] = .05
         self.z_bar = np.zeros(6)
         self.landmark_0 = 0
         self.landmark_1 = 0
@@ -200,9 +201,9 @@ class EKF(car_simulation):
         self.sigma_bar = np.zeros((6, 6))
         self.H_t = np.zeros((4, 6))
         self.observation_model = np.zeros(4)
-        self.Q = np.diag(np.array([self.c1*np.random.normal(0, 0.066), self.c2*np.random.normal(0, 0.066)]))
+        self.Q = np.diag(np.array([self.c1*np.random.normal(0, 0.0288), self.c2*np.random.normal(0, 0.0288)]))
         self.R = np.diag(np.array([self.c3*np.random.normal(0, 0.04), self.c4*np.random.normal(0, 0.04),
-                                   self.c5*np.random.normal(0, .01), self.c6*np.random.normal(0, .01)]))
+                                   self.c5*np.random.normal(0, .001), self.c6*np.random.normal(0, .001)]))
         self.error = 0
         
     def time_propagation_update(self):
@@ -214,7 +215,7 @@ class EKF(car_simulation):
         bias = self.z_hat[5]
 
         x_t_plus_one_bar = x_t_hat + v_t_hat*math.cos(theta_t_hat + np.pi/2)*self.dt
-        y_t_plus_one_bar = y_t_hat + v_t_hat*math.cos(theta_t_hat + np.pi/2)*self.dt
+        y_t_plus_one_bar = y_t_hat + v_t_hat*math.sin(theta_t_hat + np.pi/2)*self.dt
         v_t_plus_one_bar = v_t_hat
         theta_t_plus_one_bar = (theta_t_hat + 2 * np.pi) % (2 * np.pi) + omega_t_hat*self.dt
         omega_t_plus_one_bar = omega_t_hat
@@ -245,22 +246,23 @@ class EKF(car_simulation):
 
     def get_observation_model(self): # good
         x_bar = self.z_bar[0]
-        print 'location'
-        print x_bar
+        #print 'location'
+        #print x_bar
         y_bar = self.z_bar[1]
-        print y_bar
+        #print y_bar
         theta_bar = self.z_bar[3]
         omega_bar = self.z_bar[4]
+        bias_bar = self.z_bar[5]
         distance_one_bar = self.laser_output(x_bar, y_bar, theta_bar)
-        print 'distance one'
-        print distance_one_bar
+        #print 'distance one'
+        #print distance_one_bar
         self.landmark_0 = self.get_landmarks()
         distance_two_bar = self.laser_output(x_bar, y_bar, theta_bar + np.pi / 2)
-        print distance_two_bar
+        #print distance_two_bar
         self.landmark_1 = self.get_landmarks()
         self.observation_model[0] = distance_one_bar + np.random.normal(0, .04)
         self.observation_model[1] = distance_two_bar + np.random.normal(0, .04)
-        self.observation_model[2] = theta_bar + np.random.normal(0, .001)
+        self.observation_model[2] = theta_bar + np.random.normal(0, .001) + bias_bar
         self.observation_model[3] = omega_bar + np.random.normal(0, .001)
         return self.observation_model
 
@@ -281,7 +283,9 @@ class EKF(car_simulation):
 
     def error_calculation(self, sensor_read):
         self.error = sensor_read - self.observation_model
-        self.error[2:4] = 0
+        self.error[3] = self.error[3] % (2 * np.pi)
+        if self.error[3] > np.pi:
+            self.error[3] -= 2 * np.pi
         #print self.error
         return self.error
         
@@ -303,14 +307,14 @@ class EKF(car_simulation):
 
 if __name__ == '__main__':
     k = 0
-    input1 = 1
-    input2 = 1
-    sim_time = 1 # the car travels at 20 mm per second
+    input1 = -.6
+    input2 = .3
+    sim_time = 4 # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
     height = 750
     wheel_base = 85
-    time_step = .1
+    time_step = .01
     x_i = 300
     y_i = 300
     theta_i = 0
@@ -337,6 +341,6 @@ if __name__ == '__main__':
     #print car_sensor_readout
     #print car_state
     z_hat_final = z_hat_list[1:]
-   #print car_state
-    #print z_hat_final
+    print car_state
+    print z_hat_final
 

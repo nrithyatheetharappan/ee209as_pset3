@@ -27,8 +27,8 @@ class car_simulation(DistanceGenerator):
         #change standard deviation
         #make them global? thetas?
         # get t.. t = t + something?
-        w_omega_t = np.random.normal(0,0.66)
-        w_v_t = np.random.normal(0,0.66)
+        w_omega_t = np.random.normal(0,0.0285)
+        w_v_t = np.random.normal(0,0.0285)
         w_t = ((self.r*self.phi_1) - (self.r*self.phi_2))/self.L
         v_t = ((self.r*self.phi_1) + (self.r*self.phi_2))/2
         #time evolution
@@ -359,8 +359,8 @@ if __name__ == '__main__':
     dt = 0.2
     L = 85
     Q = np.zeros((2,2))
-    Q[0][0] = c1 * np.random.normal(0,0.66) * np.random.normal(0,0.66)
-    Q[1][1] = c1 * np.random.normal(0,0.66) * np.random.normal(0,0.66)
+    Q[0][0] = c1 * np.random.normal(0,0.0285) * np.random.normal(0,0.0285)
+    Q[1][1] = c1 * np.random.normal(0,0.0285) * np.random.normal(0,0.0285)
     R = np.zeros((4,4))
     R[0][0] = c1 * np.random.normal(0, .04)
     R[1][1] = c2 * np.random.normal(0, .04)
