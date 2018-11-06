@@ -181,7 +181,7 @@ class EKF(car_simulation):
     c2 = .01
     c3 = 1
     c4 = 1
-    c5 = 10
+    c5 = 1
     c6 = 10
 
     def __init__(self, phi_1, phi_2, dt, L, r, total_time, x, y, theta):
@@ -313,7 +313,7 @@ class EKF(car_simulation):
         #print self.kalman_gain
         #print self.z_hat
         #self.z_hat[2:4] = 0
-        print self.z_hat
+        #print self.z_hat
         return self.z_hat
 
     def observation_update_covariance(self): # good
@@ -360,5 +360,5 @@ if __name__ == '__main__':
     #print car_state
     z_hat_final = z_hat_list[1:]
     print car_state
-    #print z_hat_final
+    print z_hat_final
 

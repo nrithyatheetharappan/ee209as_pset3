@@ -177,10 +177,10 @@ def find_H_t(H_t,observation,z_bar,landmark_values): # good
 
 class EKF(car_simulation):
     c1 = .1 # trust the measurement over the model
-    c2 = .01
+    c2 = .001
     c3 = 1
     c4 = 1
-    c5 = 10
+    c5 = 1
     c6 = 10
 
     def __init__(self, phi_1, phi_2, dt, L, r, total_time, x, y, theta):
