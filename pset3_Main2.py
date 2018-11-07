@@ -37,16 +37,16 @@ def plot_covariance_ellipse(z_hat, sigma_hat):
     px = np.array(fx[0, :] + z_hat[0][0]).flatten()
     py = np.array(fx[1, :] + z_hat[0][1]).flatten()
     plt.plot(px, py, "--r")
-    # print(px)
-    # print(py)
+    print("px")
+    print(px)
+    print("py")
+    print(py)
 
 def main():
-    fig = plt.figure()
-    ax = plt.axes(xlim=(0, 500), ylim=(0, 750))
     k = 0
-    input1 = -.6
-    input2 = .3
-    sim_time = 3  # the car travels at 20 mm per second
+    input1 = -1
+    input2 = -1
+    sim_time = 1 # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
     height = 750
@@ -60,12 +60,12 @@ def main():
     car_state = car.get_simulation()
     car_sensor_readout = car.get_sensor_simulation()
     estimator = EKF(input1, input2, time_step, wheel_base, wheel_radius, sim_time, x_i, y_i, theta_i)
-    z_hat_list = np.zeros((1, 5))
+    z_hat_list = np.zeros((1, 6))
 
     # State Vector [x y yaw v]'
-    xEst = np.array([[x_i, y_i, theta_i, 0, 0]])
+    xEst = np.array([[x_i, y_i, 0,  theta_i, 0, 0]])
     xTrue = xEst
-    PEst = np.eye(5)
+    PEst = np.eye(6)
 
     # history
     hxEst = xEst
@@ -100,9 +100,13 @@ def main():
             #plt.axes(xlim=(0, 500), ylim=(0, 750))
             #plt.axis("equal")
             plt.grid(True)
-            plt.pause(.1)
+            plt.pause(2)
 
         k = k + 1
+
+        # plt.figure()
+        # plt.plot(px, py,"--r")
+
 
     z_hat_final = z_hat_list[1:]
 

@@ -341,6 +341,6 @@ if __name__ == '__main__':
     #print car_sensor_readout
     #print car_state
     z_hat_final = z_hat_list[1:]
-    print car_state
-    print z_hat_final
+    print(car_state)
+    print(z_hat_final)
 
