@@ -26,8 +26,9 @@ def plot_covariance_ellipse(z_hat, sigma_hat):
         smallind = 0
 
     t = np.arange(0, 2 * math.pi + 0.1, 0.1)
-    a = math.sqrt(eigval[bigind])
-    b = math.sqrt(eigval[smallind])
+    print(eigval)
+    a = math.sqrt(np.absolute(eigval[bigind]))
+    b = math.sqrt(np.absolute(eigval[smallind]))
     x = [a * math.cos(it) for it in t]
     y = [b * math.sin(it) for it in t]
     angle = math.atan2(eigvec[bigind, 1], eigvec[bigind, 0])
@@ -37,16 +38,14 @@ def plot_covariance_ellipse(z_hat, sigma_hat):
     px = np.array(fx[0, :] + z_hat[0][0]).flatten()
     py = np.array(fx[1, :] + z_hat[0][1]).flatten()
     plt.plot(px, py, "--r")
-    print("px")
-    print(px)
-    print("py")
-    print(py)
+    #plt.ylim(250, 350)
+    #plt.xlim(300, 360)
 
 def main():
     k = 0
-    input1 = -1
-    input2 = -1
-    sim_time = 1 # the car travels at 20 mm per second
+    input1 = -.5
+    input2 = 2
+    sim_time = 11 # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
     height = 750
@@ -97,21 +96,13 @@ def main():
             plt.plot(np.array(hxEst[:, 0]).flatten(),
                      np.array(hxEst[:, 1]).flatten(), "-r")
             plot_covariance_ellipse(z_hat, sigma_hat)
-            #plt.axes(xlim=(0, 500), ylim=(0, 750))
+            #plt.ylim(250, 350)
+            #plt.xlim(300, 360)
             #plt.axis("equal")
             plt.grid(True)
-            plt.pause(2)
+            plt.pause(.001)
 
         k = k + 1
-
-        # plt.figure()
-        # plt.plot(px, py,"--r")
-
-
-    z_hat_final = z_hat_list[1:]
-
-    # print(car_state)
-    # print(z_hat_final)
 
 
 

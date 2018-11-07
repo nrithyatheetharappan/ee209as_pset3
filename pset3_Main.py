@@ -9,9 +9,9 @@ author: Atsushi Sakai (@Atsushi_twi)
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from pset3_test import World
-from pset3_test import car_simulation
-from pset3_test import EKF
+from pset3_test_test import World
+from pset3_test_test import car_simulation
+from pset3_test_test import EKF
 
 
 def plot_covariance_ellipse(z_hat, sigma_hat):
@@ -26,8 +26,9 @@ def plot_covariance_ellipse(z_hat, sigma_hat):
         smallind = 0
 
     t = np.arange(0, 2 * math.pi + 0.1, 0.1)
-    a = math.sqrt(eigval[bigind])
-    b = math.sqrt(eigval[smallind])
+    print(eigval)
+    a = math.sqrt(np.absolute(eigval[bigind]))
+    b = math.sqrt(np.absolute(eigval[smallind]))
     x = [a * math.cos(it) for it in t]
     y = [b * math.sin(it) for it in t]
     angle = math.atan2(eigvec[bigind, 1], eigvec[bigind, 0])
@@ -44,9 +45,9 @@ def main():
     fig = plt.figure()
     ax = plt.axes(xlim=(0, 500), ylim=(0, 750))
     k = 0
-    input1 = -.6
-    input2 = .3
-    sim_time = 3  # the car travels at 20 mm per second
+    input1 = -2
+    input2 = -1.3
+    sim_time = 6  # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
     height = 750
@@ -97,10 +98,11 @@ def main():
             plt.plot(np.array(hxEst[:, 0]).flatten(),
                      np.array(hxEst[:, 1]).flatten(), "-r")
             plot_covariance_ellipse(z_hat, sigma_hat)
-            #plt.axes(xlim=(0, 500), ylim=(0, 750))
+            #plt.ylim(100, 300)
+            #plt.xlim(150, 300)
             #plt.axis("equal")
             plt.grid(True)
-            plt.pause(.1)
+            plt.pause(.009)
 
         k = k + 1
 
