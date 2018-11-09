@@ -134,11 +134,12 @@ class car_simulation(DistanceGenerator):
         # precompute the sensor output
         i = 0
         while i < self.loops:
-            distance_one = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][3]) + np.random.normal(0, .04)
-            distance_two = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][3] + np.pi/2)\
-                           + np.random.normal(0, .04)
-            theta_t_measured = self.z[i][3] + np.random.normal(0, .001) + self.z[i][5]
-            omega_t_measured = self.z[i][4] + np.random.normal(0, .001)
+            distance_one = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][3])
+            distance_two = self.laser_output(self.z[i][0], self.z[i][1], self.z[i][3] + np.pi/2)
+            distance_one = distance_one + np.random.normal(0, distance_one*.002)
+            distance_two = distance_two + np.random.normal(0, distance_two*.002)
+            theta_t_measured = self.z[i][3] + np.random.normal(0, .07) + self.z[i][5]
+            omega_t_measured = self.z[i][4] + np.random.normal(0, .07)
             self.sensor_output[i][:] = np.array([distance_one, distance_two, theta_t_measured, omega_t_measured])
             i = i + 1
         return self.sensor_output
@@ -176,12 +177,12 @@ def find_H_t(H_t,observation,z_bar,landmark_values): # good
 
 
 class EKF(car_simulation):
-    c1 = 1000 # trust the measurement over the model
-    c2 = 1000
-    c3 = 10e5
-    c4 = 10e5
-    c5 = 10e5
-    c6 = 10e5
+    c1 = 5000 # trust the measurement over the model
+    c2 = 5000
+    c3 = 10e6
+    c4 = 10e6
+    c5 = 10e6
+    c6 = 10
 
     def __init__(self, phi_1, phi_2, dt, L, r, total_time, x, y, theta):
         super(EKF, self).__init__(r, phi_1, phi_2, L, dt, total_time, x, y, theta)
@@ -201,9 +202,9 @@ class EKF(car_simulation):
         self.sigma_bar = np.zeros((6, 6))
         self.H_t = np.zeros((4, 6))
         self.observation_model = np.zeros(4)
-        self.Q = np.diag(np.array([self.c1*np.random.normal(0, 0.0288), self.c2*np.random.normal(0, 0.0288)]))
-        self.R = np.diag(np.array([self.c3*np.random.normal(0, 0.04), self.c4*np.random.normal(0, 0.04),
-                                   self.c5*np.random.normal(0, .001), self.c6*np.random.normal(0, .001)]))
+        self.Q = np.diag(np.array([self.c1, self.c2]))
+        self.R = np.diag(np.array([self.c3, self.c4,
+                                   self.c5, self.c6]))
         self.error = 0
         
     def time_propagation_update(self):
@@ -260,10 +261,10 @@ class EKF(car_simulation):
         distance_two_bar = self.laser_output(x_bar, y_bar, theta_bar + np.pi / 2)
         #print distance_two_bar
         self.landmark_1 = self.get_landmarks()
-        self.observation_model[0] = distance_one_bar + np.random.normal(0, .04)
-        self.observation_model[1] = distance_two_bar + np.random.normal(0, .04)
-        self.observation_model[2] = theta_bar + np.random.normal(0, .001) + bias_bar
-        self.observation_model[3] = omega_bar + np.random.normal(0, .001)
+        self.observation_model[0] = distance_one_bar + np.random.normal(0, .002*distance_one_bar)
+        self.observation_model[1] = distance_two_bar + np.random.normal(0, .002*distance_two_bar)
+        self.observation_model[2] = theta_bar + np.random.normal(0, .07) + bias_bar
+        self.observation_model[3] = omega_bar + np.random.normal(0, .07)
         return self.observation_model
 
     def observation_linearization(self): # good
@@ -286,7 +287,7 @@ class EKF(car_simulation):
         self.error[3] = self.error[3] % (2 * np.pi)
         if self.error[3] > np.pi:
             self.error[3] -= 2 * np.pi
-        #print self.error
+        print(self.error)
         return self.error
         
     def conditional_mean(self): # good last resort change the model to something linear
@@ -306,10 +307,11 @@ class EKF(car_simulation):
 
 
 if __name__ == '__main__':
+    #
     k = 0
-    input1 = -.6
-    input2 = .3
-    sim_time = 4 # the car travels at 20 mm per second
+    input1 = 3
+    input2 = 3
+    sim_time = 5 # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
     height = 750
@@ -341,6 +343,8 @@ if __name__ == '__main__':
     #print car_sensor_readout
     #print car_state
     z_hat_final = z_hat_list[1:]
-    print(car_state)
-    print(z_hat_final)
+    # print(car_state)
+    # print(z_hat_final)
+    print('error')
+    print(car_state-z_hat_final)
 

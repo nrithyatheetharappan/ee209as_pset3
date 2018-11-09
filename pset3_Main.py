@@ -45,16 +45,16 @@ def main():
     fig = plt.figure()
     ax = plt.axes(xlim=(0, 500), ylim=(0, 750))
     k = 0
-    input1 = -2
-    input2 = -1.3
-    sim_time = 6  # the car travels at 20 mm per second
+    input1 = 8
+    input2 = 8
+    sim_time = 4  # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
     height = 750
     wheel_base = 85
     time_step = .01
     x_i = 300
-    y_i = 300
+    y_i = 0
     theta_i = 0
     track = World(height, width, wheel_radius, wheel_base)
     car = car_simulation(wheel_radius, input1, input2, wheel_base, time_step, sim_time, x_i, y_i, theta_i)
@@ -97,9 +97,9 @@ def main():
                      np.array(hxTrue[:, 1]).flatten(), "-b")
             plt.plot(np.array(hxEst[:, 0]).flatten(),
                      np.array(hxEst[:, 1]).flatten(), "-r")
-            plot_covariance_ellipse(z_hat, sigma_hat)
-            #plt.ylim(100, 300)
-            #plt.xlim(150, 300)
+            #plot_covariance_ellipse(z_hat, sigma_hat)
+            #plt.ylim(0, 700)
+            #plt.xlim(280, 320)
             #plt.axis("equal")
             plt.grid(True)
             plt.pause(.009)

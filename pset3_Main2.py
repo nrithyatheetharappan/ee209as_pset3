@@ -15,6 +15,9 @@ from pset3_test import EKF
 
 
 def plot_covariance_ellipse(z_hat, sigma_hat):
+    w,v = np.linalg.eig(sigma_hat)
+    print('all')
+    print(w)
     Pxy = sigma_hat[0:2, 0:2]
     eigval, eigvec = np.linalg.eig(Pxy)
 
@@ -26,6 +29,7 @@ def plot_covariance_ellipse(z_hat, sigma_hat):
         smallind = 0
 
     t = np.arange(0, 2 * math.pi + 0.1, 0.1)
+    print('some')
     print(eigval)
     a = math.sqrt(np.absolute(eigval[bigind]))
     b = math.sqrt(np.absolute(eigval[smallind]))
@@ -38,21 +42,21 @@ def plot_covariance_ellipse(z_hat, sigma_hat):
     px = np.array(fx[0, :] + z_hat[0][0]).flatten()
     py = np.array(fx[1, :] + z_hat[0][1]).flatten()
     plt.plot(px, py, "--r")
-    #plt.ylim(250, 350)
-    #plt.xlim(300, 360)
+    plt.ylim(250, 700)
+    plt.xlim(280, 320)
 
 def main():
     k = 0
-    input1 = -.5
-    input2 = 2
-    sim_time = 11 # the car travels at 20 mm per second
+    input1 = 8
+    input2 = 8
+    sim_time = 4 # the car travels at 20 mm per second
     wheel_radius = 20
     width = 500
     height = 750
     wheel_base = 85
     time_step = .01
     x_i = 300
-    y_i = 300
+    y_i = 0
     theta_i = 0
     track = World(height, width, wheel_radius, wheel_base)
     car = car_simulation(wheel_radius, input1, input2, wheel_base, time_step, sim_time, x_i, y_i, theta_i)
@@ -70,7 +74,7 @@ def main():
     hxEst = xEst
     hxTrue = xTrue
 
-    show_animation = True
+    show_animation = False
     print(__file__ + " start!!")
     while k < car.loops:
 
@@ -95,9 +99,9 @@ def main():
                      np.array(hxTrue[:, 1]).flatten(), "-b")
             plt.plot(np.array(hxEst[:, 0]).flatten(),
                      np.array(hxEst[:, 1]).flatten(), "-r")
-            plot_covariance_ellipse(z_hat, sigma_hat)
-            #plt.ylim(250, 350)
-            #plt.xlim(300, 360)
+            #plot_covariance_ellipse(z_hat, sigma_hat)
+            plt.ylim(0, 800)
+            plt.xlim(280, 320)
             #plt.axis("equal")
             plt.grid(True)
             plt.pause(.001)
